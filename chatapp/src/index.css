@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.sidenav::-webkit-scrollbar,
+#messageContainer::-webkit-scrollbar,
+#chatsContainer::-webkit-scrollbar,
+#contactsContainer::-webkit-scrollbar  {
+  width: 8px;     /* Tamaño del scroll en vertical */
+  height: 8px;    /* Tamaño del scroll en horizontal */
+}
+
+/* Ponemos un color de fondo y redondeamos las esquinas del thumb */
+.sidenav::-webkit-scrollbar-thumb,
+#messageContainer::-webkit-scrollbar-thumb,
+#chatsContainer::-webkit-scrollbar-thumb,
+#contactsContainer::-webkit-scrollbar-thumb {
+background: #d1d5db;
+border-radius: 10px;
+}
+
+/* Cambiamos el fondo y agregamos una sombra cuando esté en hover */
+.sidenav::-webkit-scrollbar-thumb:hover,
+#messageContainer::-webkit-scrollbar-thumb:hover,
+#chatsContainer::-webkit-scrollbar-thumb:hover,
+#contactsContainer::-webkit-scrollbar-thumb:hover {
+background: #b3b3b3;
+box-shadow: 0 0 2px 1px rgba(0, 0, 0, 0.2);
+}
+
+/* Cambiamos el fondo cuando esté en active */
+.sidenav::-webkit-scrollbar-thumb:active,
+#messageContainer::-webkit-scrollbar-thumb:active,
+#chatsContainer::-webkit-scrollbar-thumb:active,
+#contactsContainer::-webkit-scrollbar-thumb:active {
+background-color: #999999;
+}
+
+/* Ponemos un color de fondo y redondeamos las esquinas del track */
+.sidenav::-webkit-scrollbar-track,
+#messageContainer::-webkit-scrollbar-track,
+#chatsContainer::-webkit-scrollbar-track
+#contactsContainer::-webkit-scrollbar-track {
+background: #e1e1e1;
+border-radius: 0;
+}
+
+/* Cambiamos el fondo cuando esté en active o hover */
+.sidenav::-webkit-scrollbar-track:hover,
+.sidenav::-webkit-scrollbar-track:active,
+#messageContainer::-webkit-scrollbar-track:hover,
+#messageContainer::-webkit-scrollbar-track:active,
+#chatsContainer::-webkit-scrollbar-track:hover,
+#chatsContainer::-webkit-scrollbar-track:active
+#contactsContainer::-webkit-scrollbar-track:hover,
+#contactsContainer::-webkit-scrollbar-track:active {
+background: #d4d4d4;
+}
