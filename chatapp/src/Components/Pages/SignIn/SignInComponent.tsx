@@ -1,5 +1,6 @@
 import { MouseEventHandler, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { socket } from "../../../Services/ApiServices/SocketIOClient/Socket.IOClient";
 import { useAuth } from "../../../Services/CustomHooks/AuthProvider";
 import { onInputChange } from "../../ComponentTSCode/CommonComponentTSCode";
 
@@ -37,7 +38,7 @@ const SignInComponent = ({ ...props }): JSX.Element => {
             .then((data: any) => {
                 if (!data) return setIsSignInDataRight(false);
                 setIsSignInDataRight(true)
-                props.socket.emit('User authenticated', data.id, data.email);
+                socket.emit('User authenticated', data.id, data.email);
                 navigate('/chatUI');
             });
     };

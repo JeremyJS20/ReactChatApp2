@@ -26,7 +26,7 @@ module.exports = {
         '1/5': '20%',
         '3/5': '60%',
         'available': '-webkit-fill-available'
-      },
+      }
     },
   },
   plugins: [

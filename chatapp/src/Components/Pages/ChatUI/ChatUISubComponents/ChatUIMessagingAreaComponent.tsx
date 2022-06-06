@@ -3,6 +3,7 @@ import { containEmojis, deleteMessage, emptyChat, onFormSubmitted, onInputChange
 import 'emoji-mart/css/emoji-mart.css'
 import { Picker } from 'emoji-mart';
 import { Twemoji } from "react-emoji-render";
+import { socket } from "../../../../Services/ApiServices/SocketIOClient/Socket.IOClient";
 
 interface INoReply {
     IdMsg: string | null,
@@ -391,7 +392,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     //renders end
 
     //socketIO event listeners begins
-    props.socket.on('Update Messages', (data: any, from: string) => {
+    socket.on('Update Messages', (data: any, from: string) => {
         if (data === null) return getMessages(props.userid, props.selectedChat.Id, setMessages);
         if (typeof (data) != 'object' && from != 'deletedMessage' && localStorage.getItem("currentChat") != data.From) return;
 
@@ -418,8 +419,8 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     }
 
     const onMessageInput: Function = (e: any) => {
-        if (e.target.value.length === 0) return props.socket.emit('No typing message', props.selectedChat.Id, props.userid);
-        props.socket.emit('Typing message', props.selectedChat.Id, props.userid);
+        if (e.target.value.length === 0) return socket.emit('No typing message', props.selectedChat.Id, props.userid);
+        socket.emit('Typing message', props.selectedChat.Id, props.userid);
     }
 
     //others

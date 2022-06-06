@@ -1,9 +1,7 @@
 import jwtDecode, { JwtPayload } from 'jwt-decode';
 import { useState, useEffect } from 'react';
-import { HttpClient } from '../ApiServices/HttpClient/HttpClient';
-import SocketIOClient from '../ApiServices/SocketIOClient/Socket.IOClient';
-const socket:SocketIOClient = new SocketIOClient();
-const http:HttpClient = new HttpClient();
+import { http } from '../ApiServices/HttpClient/HttpClient';
+import {socket} from '../ApiServices/SocketIOClient/Socket.IOClient';
 
 export const useAuth:any = () => {
     const [isLoggedIn, setLoggedIn] = useState<any>(null);

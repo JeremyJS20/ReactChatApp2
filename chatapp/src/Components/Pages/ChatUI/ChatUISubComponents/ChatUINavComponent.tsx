@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { socket } from "../../../../Services/ApiServices/SocketIOClient/Socket.IOClient";
 import { useAuth } from "../../../../Services/CustomHooks/AuthProvider";
 import { setDateFormat } from "../../../ComponentTSCode/CommonComponentTSCode";
 
@@ -97,7 +98,7 @@ const ChatUINavComponent: any = ({ ...props }) => {
                             <li>
                                 <a type="button" onClick={() => LogOut().then((data: any) => {
                                     if (data) {
-                                        props.socket.emit('User unauthenticated', props.user.Id, new Date());
+                                        socket.emit('User unauthenticated', props.user.Id, new Date());
                                         navigate("/signIn");
                                     }
                                 })} className="cursor-pointer rounded-lg block py-2 px-4 text-gray-700 hover:bg-red-700 hover:text-white dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Sign out</a>

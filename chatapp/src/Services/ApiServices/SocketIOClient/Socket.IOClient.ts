@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-export default class SocketIOClient{
+class SocketIOClient{
 
     private readonly socketClient:any;
     private readonly url:any = process.env.REACT_APP_SOCKETIO_URL;
@@ -16,3 +16,5 @@ export default class SocketIOClient{
         return this.socketClient;
     }
 }
+
+export const socket:any = new SocketIOClient();

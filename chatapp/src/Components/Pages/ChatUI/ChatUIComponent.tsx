@@ -6,7 +6,7 @@ import ChatUIMessagingAreaComponent from "./ChatUISubComponents/ChatUIMessagingA
 import ChatUINavComponent from "./ChatUISubComponents/ChatUINavComponent";
 import ChatUIRecentsChatsComponent from "./ChatUISubComponents/ChatUIRecentChatsComponent";
 import jwtDecode, { JwtPayload } from "jwt-decode";
-import { HttpClient } from "../../../Services/ApiServices/HttpClient/HttpClient";
+import { http } from "../../../Services/ApiServices/HttpClient/HttpClient";
 import { FilesModal, ForwardModal, PopupModal } from "../../CommonComponents/Modals";
 
 const ChatUIComponent: any = ({ ...props }) => {
@@ -15,7 +15,6 @@ const ChatUIComponent: any = ({ ...props }) => {
     let navigate: any = useNavigate();
     let token:any = localStorage.getItem('UserToken');
     let user:any = (token != undefined ? jwtDecode<JwtPayload>(token): null);
-    const http:HttpClient = new HttpClient();
 
     const [selectedChat, setSelectedChat] = useState<any>(null);
     const [popupModalProps, setPopupModalProps] = useState<any>({

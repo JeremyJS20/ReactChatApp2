@@ -1,4 +1,4 @@
-import { HttpClient } from "../../Services/ApiServices/HttpClient/HttpClient";
+import { http } from "../../Services/ApiServices/HttpClient/HttpClient";
 
 export const onInputChange: Function = (value: string, inputName: string, state: object, setState: any) => {
     setState({ ...state, [inputName]: value });
@@ -18,13 +18,11 @@ export const containEmojis: Function = (text: string): boolean => {
 };
 
 export const emptyChat: Function = async (from: string, to: string) => {
-    const http: HttpClient = new HttpClient();
     const result: boolean | any = await http.delete(`/EmptyChat/${from}-${to}`);
     return result;
 };
 
 export const deleteMessage: Function = async (id:string, id2:string) => {
-    const http: HttpClient = new HttpClient();
     const result: boolean | any = await http.delete(`/DeleteMessage/${id}-${id2}`);
     console.log(result)
     return result;

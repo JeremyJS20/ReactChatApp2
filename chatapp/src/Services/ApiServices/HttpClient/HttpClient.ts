@@ -7,7 +7,7 @@ interface IHttpClient{
     delete(url:string, id:number): any;
 }
 
-export class HttpClient implements IHttpClient{
+class HttpClient implements IHttpClient{
 
     private readonly reqInstance:any;
 
@@ -53,3 +53,5 @@ export class HttpClient implements IHttpClient{
     }
 
 }
+
+export const http: HttpClient = new HttpClient();

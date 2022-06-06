@@ -1,0 +1,14 @@
+    .invalid{
+        border-color: #b91c1c;
+        color: #b91c1c;
+    }
+    .invalid::placeholder{
+        color: #b91c1c;
+    }
+    
+    .valid{
+        border-color: #15803d;
+    }
+    .valid::placeholder{
+        color: #15803d;
+    }

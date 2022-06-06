@@ -4,29 +4,26 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import ChatUIComponent from './Components/Pages/ChatUI/ChatUIComponent';
 import SignInComponent from './Components/Pages/SignIn/SignInComponent';
 import SignUpComponent from './Components/Pages/SignUp/SignUpComponent';
-import { HttpClient } from './Services/ApiServices/HttpClient/HttpClient';
-import SocketIOClient from './Services/ApiServices/SocketIOClient/Socket.IOClient';
+import { http } from './Services/ApiServices/HttpClient/HttpClient';
+import {socket} from './Services/ApiServices/SocketIOClient/Socket.IOClient';
 
 const App = (): JSX.Element => {
-
-  const scInstance: any = new SocketIOClient();
-  const http: HttpClient = new HttpClient();
 
   let token: any = localStorage.getItem('UserToken');
   let user: any = (token != undefined ? jwtDecode<JwtPayload>(token) : null);
 
-  scInstance.on('connect', () => console.log('socket.io working'));
+  socket.on('connect', () => console.log('socket.io working'));
 
-  scInstance.on("disconnect", (reason: any) => {
+  socket.on("disconnect", (reason: any) => {
     if (reason === "io server disconnect") {
-      scInstance.connect();
+      socket.connect();
       return;
     }
 
     if (reason === "transport close") {
-      scInstance.disconnect();
+      socket.disconnect();
       const timer = setTimeout(() => {
-        scInstance.connect();
+        socket.connect();
         clearTimeout(timer);
       }, 3000);
       return;
@@ -41,15 +38,15 @@ const App = (): JSX.Element => {
       .get("/userDataByToken/" + localStorage.getItem("UserToken"))
       .then((data: any) => {
         if (data.userIsAuthenticated) {
-          scInstance.emit('User unauthenticated', user.Id, new Date());
+          socket.emit('User unauthenticated', user.Id, new Date());
           return;
         }
-        scInstance.emit("User authenticated", data.Id, data.Email);
+        socket.emit("User authenticated", data.Id, data.Email);
       });
   };
 
   /*window.onbeforeunload = (e: any) => {
-    scInstance.emit('User unauthenticated', user.Id, new Date());
+    socket.emit('User unauthenticated', user.Id, new Date());
     e.preventDefault()
     e.returnValue = '';
   }*/
@@ -86,9 +83,9 @@ const App = (): JSX.Element => {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate replace to="/signIn" />} />
-        <Route path="/signIn" element={<SignInComponent socket={scInstance} />} ></Route>
-        <Route path="/signUp" element={<SignUpComponent socket={scInstance} />} ></Route>
-        <Route path="/chatUI" element={<ChatUIComponent socket={scInstance} />} />
+        <Route path="/signIn" element={<SignInComponent socket={socket} />} ></Route>
+        <Route path="/signUp" element={<SignUpComponent socket={socket} />} ></Route>
+        <Route path="/chatUI" element={<ChatUIComponent socket={socket} />} />
       </Routes>
     </BrowserRouter>
   );
