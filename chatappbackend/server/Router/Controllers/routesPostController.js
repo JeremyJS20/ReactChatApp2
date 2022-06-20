@@ -13,23 +13,27 @@ exports.createNewUserController = (req, res) => {
    * Se recibe la data del usuario a registrar y se crea un nuevo usuario en la base de datos
    * con clave encriptada
    */
-  const newUser = new models.userSchemaModel({
-    Name: req.body.name,
-    Lname: req.body.lname,
-    Email: req.body.email,
-    UserName: req.body.username,
-    Password: CryptoJS.AES.encrypt(req.body.password, 'password').toString()
-  });
-
-  newUser.save((err, result) => {
-    if (err) {
-      return res.json(err);
-    }
-
-    return res.json([{
-      successMsg: 'User created successfully'
-    }]);
-  });
+  try {
+    const newUser = new models.userSchemaModel({
+      Name: req.body.name,
+      Lname: req.body.lname,
+      Email: req.body.email,
+      UserName: req.body.username,
+      Password: CryptoJS.AES.encrypt(req.body.password, 'password').toString()
+    });
+  
+    newUser.save((err, result) => {
+      if (err) {
+        return res.status(500).json(err);
+      }
+  
+      return res.status(200).json([{
+        successMsg: 'User created successfully'
+      }]);
+    });
+  } catch (error) {
+    res.status(500).json(err)
+  }
 };
 
 exports.verifyAndAuthUserController = async (req, res) => {
@@ -44,14 +48,14 @@ exports.verifyAndAuthUserController = async (req, res) => {
     }).exec();
 
     if (getUser === null) {
-      return res.json([]);
+      return res.status(400).json([]);
     }
 
     // se desencripta la clave para compararla con la clave que se recibe
     const userPassword = CryptoJS.AES.decrypt(getUser.Password, 'password').toString(CryptoJS.enc.Utf8);
 
     if (req.body.password != userPassword) {
-      return res.json([]);
+      return res.status(400).json([]);
     }
 
     // una vez se confirman los datos se genera un token para autenticar al usuario
@@ -66,12 +70,12 @@ exports.verifyAndAuthUserController = async (req, res) => {
       expiresIn: '20m'
     });
 
-    return res.json([{
+    return res.status(200).json([{
       id: getUser._id,
       email: getUser.Email,
       token: token,
     }]);
-  } catch (err) { res.json(err) }
+  } catch (err) { res.status(500).json(err) }
 };
 
 exports.sendMessageWithFileController = async (req, res) => {
@@ -88,7 +92,7 @@ exports.sendMessageWithFileController = async (req, res) => {
           file.mimetype.split('/')[0] === 'audio'? 'audios':
           file.mimetype.split('/')[0] === 'application'? 'docs': ''
         }/${file.name}`, (err) => {
-          if (err)  throw err;
+          if (err)  res.status(500).json(err);
           source.push({
             FileData: file.data,
             FileName: file.name,
@@ -129,7 +133,7 @@ exports.sendMessageWithFileController = async (req, res) => {
       });
   
       newFileMessage.save((err, result) => {
-        if (err) return res.json(err);
+        if (err) return res.status(500).json(err);
   
         io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
         io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
@@ -137,35 +141,39 @@ exports.sendMessageWithFileController = async (req, res) => {
         io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
         io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.from, req.body.to);
   
-        res.json(result);
+        res.status(200).json(result);
       });
     }
 
   } catch (exc) {
-    throw exc;
+    res.status(500).json(exc);
   }
 };
 
 exports.sendMessageController = async (req, res) => {
   const io = req.app.get('socketio');
 
-  const newMessage = new models.msgSchemaModel({
-    From: new mongoose.Types.ObjectId(req.body.from),
-    To: new mongoose.Types.ObjectId(req.body.to),
-    Body: req.body.msg,
-    MsgType: "single",
-  });
-
-  newMessage.save((err, result) => {
-    if (err) return res.json(err);
-
-    io.to(config.SESSIONSMAP[req.body.from]).emit('Update Chats', result);
-    io.to(config.SESSIONSMAP[req.body.to]).emit('Update Chats', result);
-    io.to(config.SESSIONSMAP[req.body.to]).emit('Update Messages', result);
-    io.to(config.SESSIONSMAP[req.body.to]).emit('Message sended', req.body.from, req.body.to);
-
-    res.json(result);
-  });
+  try {
+    const newMessage = new models.msgSchemaModel({
+      From: new mongoose.Types.ObjectId(req.body.from),
+      To: new mongoose.Types.ObjectId(req.body.to),
+      Body: req.body.msg,
+      MsgType: "single",
+    });
+  
+    newMessage.save((err, result) => {
+      if (err) return res.status(500).json(err);
+  
+      io.to(config.SESSIONSMAP[req.body.from]).emit('Update Chats', result);
+      io.to(config.SESSIONSMAP[req.body.to]).emit('Update Chats', result);
+      io.to(config.SESSIONSMAP[req.body.to]).emit('Update Messages', result);
+      io.to(config.SESSIONSMAP[req.body.to]).emit('Message sended', req.body.from, req.body.to);
+  
+      res.status(200).json(result);
+    });
+  } catch (error) {
+    res.status(500).json(error);
+  }
 };
 
 exports.forwardMessageController = async (req, res) => {
@@ -193,7 +201,7 @@ exports.forwardMessageController = async (req, res) => {
     );
 
     newForwardMessage.save((err, result) => {
-      if (err) return res.json(err);
+      if (err) return res.status(500).json(err);
 
       io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
       io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
@@ -201,10 +209,10 @@ exports.forwardMessageController = async (req, res) => {
       io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
       io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
 
-      res.json(result);
+      res.status(200).json(result);
     });
   } catch (exc) {
-    throw exc
+    res.status(500).json(exc);
   }
 };
 
@@ -237,7 +245,7 @@ exports.replyMessageController = async (req, res) => {
     );
 
     newReplyMessage.save((err, result) => {
-      if (err) return res.json(err);
+      if (err) return res.status(500).json(err);
 
       io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
       //      io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
@@ -245,10 +253,10 @@ exports.replyMessageController = async (req, res) => {
       io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
       io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
 
-      res.json(result);
+      res.status(200).json(result);
     });
   } catch (exc) {
-    throw exc
+    res.status(500).json(exc);
   }
 };
 
@@ -310,17 +318,19 @@ exports.sendFriendRequestController = async (req, res) => {
     });
 
     newFriendRequest.save((err, result) => {
-      if (err) return res.json(err);
+      if (err) return res.status(500).json(err);
       const io = req.app.get('socketio');
 
       io.to(config.SESSiONSMAP[req.body.to]).emit("New Notification", result);
 
-      return res.json({
+      return res.status(200).json({
         successCode: 6,
         successMsg: "Friend request was sended",
       });
     });
-  } catch (err) { }
+  } catch (err) { 
+    res.status(500).json(err)
+  }
 };
 
 exports.acceptFriendRequestController = async (req, res) => {

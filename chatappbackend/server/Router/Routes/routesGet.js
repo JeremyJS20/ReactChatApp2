@@ -11,7 +11,7 @@ router.get('/api/recentChats/:Id', controller.recentChatsController);
 
 router.get('/api/notifications/:Id', controller.notificationsController);
 
-router.get('/api/selectedChatMessages/:Id-:Id2', controller.selectedChatMessagesController);
+router.get('/api/selectedChatMessages/:Id-:Id2/:offset', controller.selectedChatMessagesController);
 
 router.get('/api/verifyUserAuthTokenExpired/:token', controller.verifyUserAuthTokenExpiredController);
 

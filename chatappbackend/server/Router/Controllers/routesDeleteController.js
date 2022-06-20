@@ -26,8 +26,8 @@ exports.emptyChatController = async (req, res) => {
         io.to(config.SESSIONSMAP[req.params.Id]).emit('Update Chats', [], 'emptyChat');
         io.to(config.SESSIONSMAP[req.params.Id]).emit('Update Messages', [], 'emptyChat');
 
-        res.json(true);
-    } catch (err) { }
+        res.status(200).json(true);
+    } catch (err) { res.status(500).json(err) }
 };
 
 exports.deleteMessageController = async (req, res) => {
@@ -41,8 +41,8 @@ exports.deleteMessageController = async (req, res) => {
         io.to(config.SESSIONSMAP[req.params.Id2]).emit('Update Chats', null, 'deletedMessage');
         io.to(config.SESSIONSMAP[req.params.Id2]).emit('Update Messages', messageDeleted, 'deletedMessage');
 
-        res.json(true);
-    } catch (err) { throw err }
+        res.status(200).json(true);
+    } catch (err) { res.status(500).json(err) }
 };
 
 exports.deleteContactController = async (req, res) => {

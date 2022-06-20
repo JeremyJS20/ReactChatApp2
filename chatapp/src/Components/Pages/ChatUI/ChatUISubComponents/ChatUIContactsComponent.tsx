@@ -10,7 +10,7 @@ const ChatUIContactsComponent: any = ({ ...props }) => {
     useEffect(() => {
         const controller = new AbortController();
 
-        if (contacts.length === 0 && props.userid != null) getContacts(props.userid, setContacts);
+        if (contacts.length === 0 && props.userid !== null) getContacts(props.userid, setContacts);
 
         return () => {
             controller.abort();

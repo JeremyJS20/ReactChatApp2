@@ -13,24 +13,32 @@ exports.api = (req, res) => {
 };
 
 exports.verifyUserAuthTokenExpiredController = (req, res) => {
-  jwt.verify(req.params.token, "user", (err, data) => {
-    if (err) {
-      return res.json(false);
-    }
-
-    return res.json(true);
-  });
+  try {
+    jwt.verify(req.params.token, "user", (err, data) => {
+      if (err) {
+        return res.json(false);
+      }
+  
+      return res.status(200).json(true);
+    });
+  } catch (error) {
+    res.status(500).json(error);
+  }
 };
 
 exports.userDataByTokenController = (req, res) => {
-  jwt.verify(req.params.token, "user", (err, data) => {
-    if (err) {
-      return res.json({
-        userIsAuthenticated: false,
-      });
-    }
-    return res.json(data);
-  });
+  try {
+    jwt.verify(req.params.token, "user", (err, data) => {
+      if (err) {
+        return res.json({
+          userIsAuthenticated: false,
+        });
+      }
+      return res.status(200).json(data);
+    });
+  } catch (error) {
+    res.status(500).json(error);
+  }
 };
 
 exports.notificationsController = async(req, res) => {
@@ -42,8 +50,8 @@ exports.notificationsController = async(req, res) => {
     if(notifications.length === 0){
       return res.json([]);
     }
-    return res.json(notifications);
-  } catch (err){res.json(err)}
+    return res.status(200).json(notifications);
+  } catch (err){res.status(500).json(err)}
 };
 
 exports.myContactsController = async (req, res) => {
@@ -52,7 +60,7 @@ exports.myContactsController = async (req, res) => {
       IDUser: new mongoose.Types.ObjectId(req.params.Id),
     }).sort({Name:0});
 
-    if (myChatFriends != null && myChatFriends.FriendList.length === 0) {
+    if (myChatFriends == null || myChatFriends.FriendList.length === 0) {
       return res.json([]);
     }
 
@@ -72,11 +80,11 @@ exports.myContactsController = async (req, res) => {
         ProfilePhoto: config.DEFAULTPROFILE,
       });
       if (i === myChatFriends.FriendList.length) {
-        res.json(temp);
+        res.status(200).json(temp);
       }
       i++;
     });
-  } catch(err){}
+  } catch(err){ res.status(500).json(err)}
 };
 
 exports.selectedChatMessagesController = async (req, res) => {
@@ -94,7 +102,7 @@ exports.selectedChatMessagesController = async (req, res) => {
           },
         ],
       })
-      .sort("SendDate");
+      .sort({SendDate: -1, _id: -1}).skip(req.params.offset).limit(Number(req.params.offset) + 15);
 
     await models.msgSchemaModel.updateMany(
       {
@@ -105,8 +113,8 @@ exports.selectedChatMessagesController = async (req, res) => {
       { $set: { Unread: false } }
     );
 
-    res.json(chatMessages);
-  } catch (err) {}
+    res.status(200).json(chatMessages);
+  } catch (err) { res.status(500).json(err) }
 };
 
 exports.recentChatsController = async (req, res) => {
@@ -216,7 +224,7 @@ exports.recentChatsController = async (req, res) => {
         }
       }
     }
-  } catch(err){}
+  } catch(err){ res.status(500).json(err) }
 /*const lmc = await models.msgSchemaModel.aggregate([
     {
       $match: {

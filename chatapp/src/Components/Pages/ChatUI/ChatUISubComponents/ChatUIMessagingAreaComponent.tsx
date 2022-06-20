@@ -27,15 +27,33 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     const divDates: string[] = [];
     let divUnreadMessages: boolean = false;
 
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if(!entry.isIntersecting) return;
+            
+            console.log(messagesRef.current.indexOf(entry.target));
+            if(messagesRef.current.indexOf(entry.target) == 0){
+                if (props.selectedChat != null) getMessagesOnIntersectionObserver();
+            }
+            observer.unobserve(entry.target);
+        });
+    }, {
+        threshold: 1,
+        rootMargin: '100px 0px 100px 0px'
+    });
+
     const messagingContainerRef: any = useRef();
     const unreadMessageRef: any = useRef();
+
+    const messagesRef: any = useRef();
+
 
     useEffect(() => {
         if (props.selectedChat != null && localStorage.getItem('currentChat') != props.selectedChat.Id) {
             localStorage.setItem('currentChat', props.selectedChat.Id);
             setIsloading(true);
         }
-        if (props.selectedChat != null) getMessages(props.userid, props.selectedChat.Id, setMessages);
+        if (props.selectedChat != null) getMessages(setMessages);
 
         return () => {
             setMessageToReply({
@@ -49,9 +67,16 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
         };
     }, [props.selectedChat]);
 
+    useEffect(() => {
+        messagesRef.current = Array.from(document.querySelectorAll('.message'));
+        document.querySelectorAll('.message').forEach((entry:any) => {
+            observer.observe(entry);
+        })
+    }, [isLoading, messages]);
+
     //getting messages from api
-    const getMessages: any = async (id: string, id2: string, setState: any) => {
-        setState(await props.http.get(`/selectedChatMessages/${id}-${id2}`));
+    const getMessages: any = async (setState: any) => {
+        setState(await props.http.get(`/selectedChatMessages/${props.userid}-${props.selectedChat.Id}/${messages.length}`));
         localStorage.setItem('currentChat', props.selectedChat.Id);
         setIsloading(false);
 
@@ -67,6 +92,14 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
             top: messagingContainerRef.current.scrollHeight,
             behavior: 'auto',
         });
+    };
+
+    const getMessagesOnIntersectionObserver: Function = async () => {
+        const s = await props.http.get(`/selectedChatMessages/${props.userid}-${props.selectedChat.Id}/${messages.length}`);
+
+        const temp: any[] = [...s, ...messages]
+
+        setMessages(temp);
     };
 
     //sendind message to api
@@ -311,7 +344,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
             <div key={message._id}>
                 {divMessageByDates(message.SendDate)}
                 {unreadMessages(message)}
-                <div className={`flex ${attributes.orientation} mb-2`} >
+                <div className={`flex ${attributes.orientation} mb-2 message`} >
                     <div className={`max-w-[375px] p-1 flex border border-indigo-600 rounded-lg shadow-xl ${attributes.colors}`} style={{ flexDirection: 'column', position: 'relative' }}>
                         { /* Message forwarded */
                             message.IsForwarding ?

@@ -20,7 +20,7 @@ const ChatUINavComponent: any = ({ ...props }) => {
             LogOut = null;
             navigate = null;
         };
-    }, [notifications]);
+    }, []);
 
     //getting notifications from api
     const getNotifications: any = async (id: string, setState: any) => {

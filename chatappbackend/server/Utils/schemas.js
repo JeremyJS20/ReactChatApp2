@@ -72,7 +72,8 @@ const messageSchema = new schema({
 });
 
 exports.msgSchemaModel = model('messageModel', messageSchema);
-
+/*629d8dcd9b998a18936d644c
+62afb694968b8e1ab3211c53*/
 const userFriendListSchema = new schema({
     IDUser: { type: schema.Types.ObjectId, required: true },
     FriendList: { type: [schema.Types.ObjectId], required: false }
