@@ -11,6 +11,8 @@ const app = express(); //inicializar express
 const httpServer = createServer(app); //inicializar servidor
 const io = new Server(httpServer, {}); //inicializar websocket
 
+require('dotenv').config();
+
 //inicializar base de datos
 require("./server/Utils/mongoose");
 
