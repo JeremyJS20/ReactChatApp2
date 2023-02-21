@@ -1,9 +1,11 @@
-import React, { MouseEventHandler, useEffect, useRef, useState } from "react";
+import React, { forwardRef, MouseEventHandler, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { containEmojis, deleteMessage, emptyChat, onFormSubmitted, onInputChange } from "../../../ComponentTSCode/CommonComponentTSCode";
 import 'emoji-mart/css/emoji-mart.css'
 import { Picker } from 'emoji-mart';
 import { Twemoji } from "react-emoji-render";
 import { socket } from "../../../../Services/ApiServices/SocketIOClient/Socket.IOClient";
+import AuthContext from "../../../Context/AuthContext";
+import { http } from "../../../../Services/ApiServices/HttpClient/HttpClient";
 
 interface INoReply {
     IdMsg: string | null,
@@ -12,11 +14,21 @@ interface INoReply {
     FullName: string
 }
 
-const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
+const ChatUIMessagingAreaComponent = forwardRef(({ ...props }: any, ref) => {
+
+    React.useImperativeHandle(ref, () => {
+        return {
+            selectedChat: selectedChat,
+            setSelectedChat: setSelectedChat
+        }
+    });
+
+    const { authUser, setAuthUser } = useContext(AuthContext);
+
+    const [selectedChat, setSelectedChat] = useState<any>(undefined);
 
     const [message, setMessage] = useState({ messageToSend: '' });
-    const [messages, setMessages] = useState<any>([]);
-    const [isLoading, setIsloading] = useState(true);
+    const [messages, setMessages] = useState<any>(undefined);
     const [messageToReply, setMessageToReply] = useState<INoReply>({
         IdMsg: null,
         BodyMsg: '',
@@ -27,20 +39,20 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     const divDates: string[] = [];
     let divUnreadMessages: boolean = false;
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-            if(!entry.isIntersecting) return;
-            
-            console.log(messagesRef.current.indexOf(entry.target));
-            if(messagesRef.current.indexOf(entry.target) == 0){
-                if (props.selectedChat != null) getMessagesOnIntersectionObserver();
-            }
-            observer.unobserve(entry.target);
-        });
-    }, {
-        threshold: 1,
-        rootMargin: '100px 0px 100px 0px'
-    });
+    // const observer = new IntersectionObserver((entries) => {
+    //     entries.forEach((entry) => {
+    //         if(!entry.isIntersecting) return;
+
+    //         console.log(messagesRef.current.indexOf(entry.target));
+    //         if(messagesRef.current.indexOf(entry.target) == 0){
+    //             if (selectedChat != null) getMessagesOnIntersectionObserver();
+    //         }
+    //         observer.unobserve(entry.target);
+    //     });
+    // }, {
+    //     threshold: 1,
+    //     rootMargin: '100px 0px 100px 0px'
+    // });
 
     const messagingContainerRef: any = useRef();
     const unreadMessageRef: any = useRef();
@@ -48,88 +60,93 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     const messagesRef: any = useRef();
 
 
+    // useEffect(() => {
+    //     if (selectedChat != null && localStorage.getItem('currentChat') != selectedChat.Id) {
+    //         localStorage.setItem('currentChat', selectedChat.Id);
+    //         setIsloading(true);
+    //     }
+    //     if (selectedChat != null) getMessages(setMessages);
+
+    //     return () => {
+    //         setMessageToReply({
+    //             IdMsg: null,
+    //             BodyMsg: '',
+    //             From: '',
+    //             FullName: ''
+    //         });
+    //         setMessages([]);
+    //         setMessage({ messageToSend: '' });
+    //     };
+    // }, []);
+
     useEffect(() => {
-        if (props.selectedChat != null && localStorage.getItem('currentChat') != props.selectedChat.Id) {
-            localStorage.setItem('currentChat', props.selectedChat.Id);
-            setIsloading(true);
+       if(selectedChat == undefined) return;
+       (
+        async () => {
+            try {
+                const selectedChatMessages = await http.get(`/selectedChatMessages/${authUser.Id || authUser.id}-${selectedChat.Id}`);
+
+                setMessages(selectedChatMessages);
+                messagingContainerRef.current.scroll({
+                    top: messagingContainerRef.current.scrollHeight,
+                    behavior: 'auto',
+                });
+            } catch (error) {
+                throw error
+            }
         }
-        if (props.selectedChat != null) getMessages(setMessages);
+    )()
+    }, [selectedChat]);
 
-        return () => {
-            setMessageToReply({
-                IdMsg: null,
-                BodyMsg: '',
-                From: '',
-                FullName: ''
-            });
-            setMessages([]);
-            setMessage({ messageToSend: '' });
-        };
-    }, [props.selectedChat]);
+    // useEffect(() => {
+    //     messagesRef.current = Array.from(document.querySelectorAll('.message'));
+    //     document.querySelectorAll('.message').forEach((entry:any) => {
+    //         observer.observe(entry);
+    //     })
+    // }, [isLoading, messages]);
 
-    useEffect(() => {
-        messagesRef.current = Array.from(document.querySelectorAll('.message'));
-        document.querySelectorAll('.message').forEach((entry:any) => {
-            observer.observe(entry);
-        })
-    }, [isLoading, messages]);
 
-    //getting messages from api
-    const getMessages: any = async (setState: any) => {
-        setState(await props.http.get(`/selectedChatMessages/${props.userid}-${props.selectedChat.Id}/${messages.length}`));
-        localStorage.setItem('currentChat', props.selectedChat.Id);
-        setIsloading(false);
+    // const getMessagesOnIntersectionObserver: Function = async () => {
+    //     const s = await http.get(`/selectedChatMessages/${authUser.Id || authUser.id}-${selectedChat.Id}/${messages.length}`);
 
-        if (unreadMessageRef.current != undefined) {
-            const coords = unreadMessageRef.current.getBoundingClientRect();
-            return messagingContainerRef.current.scrollTo({
-                top: coords.y - 150,
-                left: coords.x,
-                behavior: 'auto',
-            });
-        }
-        messagingContainerRef.current.scroll({
-            top: messagingContainerRef.current.scrollHeight,
-            behavior: 'auto',
-        });
-    };
+    //     const temp: any[] = [...s, ...messages]
 
-    const getMessagesOnIntersectionObserver: Function = async () => {
-        const s = await props.http.get(`/selectedChatMessages/${props.userid}-${props.selectedChat.Id}/${messages.length}`);
-
-        const temp: any[] = [...s, ...messages]
-
-        setMessages(temp);
-    };
+    //     setMessages(temp);
+    // };
 
     //sendind message to api
-    const sendMessage: Function = async (e: any, state: any, setState: any, state2: any, setState2: any, from: string, to: string) => {
+    const handleMessageSubmit = useCallback(async (e) => {
         e.preventDefault();
-        if (state.messageToSend === '') return;
+        try {
+            if (message.messageToSend === '') return;
 
         if (messageToReply.IdMsg != null) return ReplyMessage(message.messageToSend);
 
-        const result: any = await props.http.post('/sendMessage', {
-            from: from,
-            to: to,
-            msg: state.messageToSend
+        const result: any = await http.post('/sendMessage', {
+            from: authUser.Id || authUser.id,
+            to: selectedChat.Id,
+            msg: message.messageToSend
         });
 
-        if (result._id === undefined) throw result;
+        //if (result._id === undefined) throw result;
 
-        state2.push(result);
-        setState({ ...state, messageToSend: '' });
+        messages.push(result);
+        
+        setMessage({ ...message, messageToSend: '' });
 
         messagingContainerRef.current.scroll({
             top: messagingContainerRef.current.scrollHeight,
             behavior: 'smooth',
         });
-    };
+        } catch (error) {
+            throw error
+        }
+    }, [authUser, selectedChat, message, messages]);
 
     const ReplyMessage: Function = async (msg: any) => {
-        const result = await props.http.post('/ReplyMessage', {
-            From: props.userid,
-            To: props.selectedChat.Id,
+        const result = await http.post('/ReplyMessage', {
+            From: authUser.Id || authUser.id,
+            To: selectedChat.Id,
             Body: msg,
             IdReplyMessage: messageToReply.IdMsg,
         });
@@ -145,7 +162,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
 
     //renders begin
     const showMessages: Function = () => {
-        if (isLoading === true) {
+        if (messages === undefined) {
             return (
                 <div className="flex h-available items-center justify-center" style={{ flexDirection: 'column' }}>
                     <svg role="status" className="inline mr-2 w-[50px] h-auto text-gray-200 animate-spin dark:text-gray-600 fill-indigo-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -158,14 +175,15 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
 
         if (messages.length === 0) {
             return (
-                <div className="flex h-available items-center justify-center text-xl">
+                <div className="flex h-available items-center justify-center text-xl text-black">
                     <strong>Type some message to start a conversation</strong>
                 </div>
             );
         }
+console.log(messages);
 
         return messages.map((message: any) =>
-            message.From === props.userid ? msg(message, {
+            authUser != undefined && (message.From === (authUser.Id || authUser.id) ? msg(message, {
                 colors: 'bg-indigo-600 text-white',
                 orientation: 'justify-end',
                 dropdownOrientation: 'dropdown-end'
@@ -173,7 +191,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
                 colors: '',
                 orientation: 'justify-start',
                 dropdownOrientation: 'dropdown-start'
-            })
+            }))
         );
     };
 
@@ -208,7 +226,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     };
 
     const unreadMessages: Function = (msg: any) => {
-        if (msg.From === props.userid) return;
+        if (msg.From === authUser.Id || authUser.id) return;
         if (divUnreadMessages === true) return;
 
         if (msg.Unread === true) {
@@ -357,7 +375,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
                             message.IsReplying ?
                                 <div className="flex bg-indigo-800 rounded-lg p-1 text-xs text-white italic" style={{ flexDirection: 'column' }}>
                                     <div>
-                                        <strong>{message.IsReplyingInfo.IdSender === props.userid ? 'You' : props.selectedChat.FullName}</strong>
+                                        <strong>{message.IsReplyingInfo.IdSender === authUser.Id || authUser.id ? 'You' : selectedChat.FullName}</strong>
                                     </div>
                                 </div>
                                 : ''
@@ -396,7 +414,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
                                             </label>
                                         </li>
                                         <li>
-                                            <label onClick={(): MouseEventHandler => props.setPopupModalProps({ message: `Are you sure you want delete this message?`, action: () => deleteMessage(message._id, props.userid) })} htmlFor="my-modal" className="modal-button text-black flex cursor-pointer rounded-lg py-2 px-4 hover:bg-red-600 hover:text-white dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                                            <label onClick={(): MouseEventHandler => props.setPopupModalProps({ message: `Are you sure you want delete this message?`, action: () => deleteMessage(message._id, authUser.Id || authUser.id) })} htmlFor="my-modal" className="modal-button text-black flex cursor-pointer rounded-lg py-2 px-4 hover:bg-red-600 hover:text-white dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
                                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                                 <div>Delete message</div>
                                             </label>
@@ -412,38 +430,28 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
         );
     };
 
-    if (props.selectedChat === null) {
-        return (
-            <div className="w-full flex items-center justify-center md:w-half" style={{ flexDirection: 'column' }}>
-                <svg className="w-[150px] h-auto text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                <div className="text-xl text-center mb-[100px] mx-5">
-                    <strong>Start messaging selecting a chat or contact</strong>
-                </div>
-            </div>
-        );
-    }
     //renders end
 
     //socketIO event listeners begins
-    socket.on('Update Messages', (data: any, from: string) => {
-        if (data === null) return getMessages(props.userid, props.selectedChat.Id, setMessages);
-        if (typeof (data) != 'object' && from != 'deletedMessage' && localStorage.getItem("currentChat") != data.From) return;
+    // socket.on('Update Messages', (data: any, from: string) => {
+    //     if (data === null) return getMessages(authUser.Id || authUser.id, selectedChat.Id, setMessages);
+    //     if (typeof (data) != 'object' && from != 'deletedMessage' && localStorage.getItem("currentChat") != data.From) return;
 
-        var temp: any[] = messages.slice();
-        if (from == 'deletedMessage') {
-            setMessages(temp.filter((msg: any) => msg._id != data._id))
-        } else if (from == 'emptyChat') {
-            setMessages([]);
-        } else {
-            temp.push(data);
-        }
-        //setMessages(temp);
+    //     var temp: any[] = messages.slice();
+    //     if (from == 'deletedMessage') {
+    //         setMessages(temp.filter((msg: any) => msg._id != data._id))
+    //     } else if (from == 'emptyChat') {
+    //         setMessages([]);
+    //     } else {
+    //         temp.push(data);
+    //     }
+    //     //setMessages(temp);
 
-        messagingContainerRef.current.scroll({
-            top: messagingContainerRef.current.scrollHeight,
-            behavior: 'auto',
-        });
-    });
+    //     messagingContainerRef.current.scroll({
+    //         top: messagingContainerRef.current.scrollHeight,
+    //         behavior: 'auto',
+    //     });
+    // });
     //socketIO event listeners end
 
     //onMessageInput events
@@ -452,8 +460,8 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     }
 
     const onMessageInput: Function = (e: any) => {
-        if (e.target.value.length === 0) return socket.emit('No typing message', props.selectedChat.Id, props.userid);
-        socket.emit('Typing message', props.selectedChat.Id, props.userid);
+        if (e.target.value.length === 0) return socket.emit('No typing message', selectedChat.Id, authUser.Id || authUser.id);
+        socket.emit('Typing message', selectedChat.Id, authUser.Id || authUser.id);
     }
 
     //others
@@ -462,7 +470,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
             IdMsg: msg._id,
             BodyMsg: (msg.Body.length > 50 ? containEmojis(msg.Body) ? <Twemoji className="flex items-center" text={`${msg.Body.substr(0, 30)}...`} /> : `${msg.Bodysubstr(0, 50)}...` : containEmojis(msg.Body) ? <Twemoji className="flex items-center" text={msg.Body} /> : msg.Body),
             From: msg.From,
-            FullName: (msg.From === props.userid ? 'Tu' : props.selectedChat.FullName)
+            FullName: (msg.From === authUser.Id || authUser.id ? 'Tu' : selectedChat.FullName)
         });
     };
 
@@ -480,20 +488,32 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
     };
 
     //main render
+    if (selectedChat === undefined) {
+        return (
+            <div className="w-available flex items-center justify-center bg-gray-50" style={{ flexDirection: 'column' }}>
+                <svg className="w-[150px] h-auto text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                <div className="text-xl text-black text-center mb-[100px] mx-5">
+                    <strong>Start a conversation selecting a chat</strong>
+                </div>
+            </div>
+        );
+    }
+
+
     return (
-        <div className="w-full md:w-half flex justify-between" style={{ flexDirection: "column" }}>
+        <div className="bg-white w-available flex justify-between" style={{ flexDirection: "column" }}>
 
             {/*Chat info area */}
             <div className="bg-gray-50 flex items-center justify-between border-b border-gray-200 p-[9px] md:px-[20px] md:py-[7px]">
 
                 {/* Selected chat profilephoto, fullname and status */}
                 <div className="w-available flex items-center">
-                    <img src={props.selectedChat.ProfilePhoto} className="w-12 mr-2 rounded-full h-auto" alt="photo" />
+                    <img src={selectedChat.ProfilePhoto} className="w-12 mr-2 rounded-full h-auto" alt="photo" />
                     <div className="w-available flex" style={{ flexDirection: 'column' }}>
-                        <div><strong>{props.selectedChat.FullName}</strong></div>
-                        <div className={`${props.selectedChat.Id} text-sm `}>
+                        <div className="text-black font-semibold">{selectedChat.FullName}</div>
+                        <div className={`${selectedChat.Id}headermsgarea text-sm ${selectedChat.ConnData.Status === 'Online' ? 'text-indigo-600': 'text-gray-500'}`}>
                             {
-                                props.selectedChat.ConnData.Status === 'Online' ? 'Online' : `Offline(${new Date(props.selectedChat.ConnData.LastConn).toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })})`
+                                selectedChat.ConnData.Status === 'Online' ? 'Online' : `Offline(${new Date(selectedChat.ConnData.LastConn).toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })})`
                             }
                         </div>
                     </div>
@@ -509,8 +529,8 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"></path></svg>
                         </button>
                         <ul tabIndex={0} className="dropdown-content menu shadow bg-base-100 rounded-lg w-[175px] p-2">
-                            <li className={messages.length === 0 ? 'disabled' : ''}>
-                                <label onClick={(): MouseEventHandler => props.setPopupModalProps({ message: `Are you sure you want delete your chat with ${props.selectedChat.FullName}?`, action: () => emptyChat(props.userid, props.selectedChat.Id) })} htmlFor="my-modal" className="modal-button text-black flex cursor-pointer rounded-lg py-2 px-4 hover:bg-red-600 hover:text-white dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
+                            <li className=''>
+                                <label onClick={(): MouseEventHandler => props.setPopupModalProps({ message: `Are you sure you want delete your chat with ${selectedChat.FullName}?`, action: () => emptyChat(authUser.Id || authUser.id, selectedChat.Id) })} htmlFor="my-modal" className="modal-button text-black flex cursor-pointer rounded-lg py-2 px-4 hover:bg-red-600 hover:text-white dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     <div>Delete chat</div>
                                 </label>
@@ -521,7 +541,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
             </div>
 
             {/*Chat messaging area */}
-            <div id="messageContainer" ref={messagingContainerRef} className="h-available lock flex p-[9px] md:px-[20px] md:py-[7px] overflow-y-auto" style={{ flexDirection: 'column' }}>
+            <div id="messageContainer" ref={messagingContainerRef} className="h-available lock flex px-[150px] overflow-y-auto" style={{ flexDirection: 'column' }}>
                 {showMessages()}
             </div>
 
@@ -592,7 +612,7 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
                 </div>
 
                 {/* Message form */}
-                <form className="flex w-available" onSubmit={(e: any) => sendMessage(e, message, setMessage, messages, setMessages, props.userid, props.selectedChat.Id)}>
+                <form className="flex w-available" onSubmit={handleMessageSubmit}>
                     <input autoComplete="off" type="text" id="message" value={message.messageToSend} onInput={(e: any) => onMessageInput(e)} onChange={(e: any) => onInputChange(e.target.value, 'messageToSend', message, setMessage)} className="mr-2 bg-white border border-gray-300 text-gray-900  rounded-full focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500" placeholder="Type anything here" />
                     <button type="submit" className="text-indigo-600 border border-indigo-600 hover:bg-indigo-600 duration-200 hover:text-white focus:ring-4 focus:ring-indigo-300 font-medium rounded-full text-sm p-2.5 text-center inline-flex items-center dark:border-indigo-500 dark:text-indigo-500 dark:hover:text-white dark:focus:ring-indigo-800">
                         <svg className="w-5 h-auto dark:indigo-blue-500" aria-hidden="true" focusable="false" data-prefix="fas" data-icon="paper-plane" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M511.6 36.86l-64 415.1c-1.5 9.734-7.375 18.22-15.97 23.05c-4.844 2.719-10.27 4.097-15.68 4.097c-4.188 0-8.319-.8154-12.29-2.472l-122.6-51.1l-50.86 76.29C226.3 508.5 219.8 512 212.8 512C201.3 512 192 502.7 192 491.2v-96.18c0-7.115 2.372-14.03 6.742-19.64L416 96l-293.7 264.3L19.69 317.5C8.438 312.8 .8125 302.2 .0625 289.1s5.469-23.72 16.06-29.77l448-255.1c10.69-6.109 23.88-5.547 34 1.406S513.5 24.72 511.6 36.86z"></path></svg>
@@ -601,6 +621,6 @@ const ChatUIMessagingAreaComponent: any = ({ ...props }) => {
             </div>
         </div>
     );
-};
+});
 
 export default ChatUIMessagingAreaComponent;

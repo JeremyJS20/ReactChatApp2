@@ -13,6 +13,8 @@ router.get('/api/notifications/:Id', controller.notificationsController);
 
 router.get('/api/selectedChatMessages/:Id-:Id2/:offset', controller.selectedChatMessagesController);
 
+router.get('/api/selectedChatMessages/:Id-:Id2', controller.selectedChatMessagesController);
+
 router.get('/api/verifyUserAuthTokenExpired/:token', controller.verifyUserAuthTokenExpiredController);
 
 router.get('/api/userDataByToken/:token', controller.userDataByTokenController);

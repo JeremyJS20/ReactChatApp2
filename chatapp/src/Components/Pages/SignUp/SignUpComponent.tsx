@@ -1,15 +1,17 @@
-import React, { FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from "react";
+import React, { FormEventHandler, MouseEventHandler, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { http } from "../../../Services/ApiServices/HttpClient/HttpClient";
+import { auth, http } from "../../../Services/ApiServices/HttpClient/HttpClient";
 import { socket } from "../../../Services/ApiServices/SocketIOClient/Socket.IOClient";
 import { useAuth } from "../../../Services/CustomHooks/AuthProvider";
 import { onFormSubmitted, onInputChange } from "../../ComponentTSCode/CommonComponentTSCode";
+import { PrivateRoutes } from "../../ComponentTSCode/Routes";
+import AuthContext from "../../Context/AuthContext";
 
 import './SignUpComponent.scss';
 
 const SignUpComponent = ({ ...props }): any => {
 
-    const Login: Function = useAuth()[1];
+    const { setAuthUser} = useContext(AuthContext)
 
     const [signUpData, setSignUpData] = useState({
         name: '',
@@ -49,10 +51,6 @@ const SignUpComponent = ({ ...props }): any => {
     const formInvalidToastRef = useRef<any>(null);
 
     useEffect(() => {
-
-    }, [signUpData]);
-
-    useEffect(() => {
         /*const targetEl = formInvalidToastRef.current;
 
         // options object
@@ -72,7 +70,7 @@ const SignUpComponent = ({ ...props }): any => {
         const dismiss = new Dismiss(targetEl, options);*/
 
     }, []);
-
+    
     const validateName: FormEventHandler = (e: any): void => {
         if (e.target.value.length === 0) {
             e.target.classList.remove('valid');
@@ -138,7 +136,6 @@ const SignUpComponent = ({ ...props }): any => {
         socket.emit('verify email', e.target.value, (res: any) => {
             if (res.emailExists === false) {
                 inputEmailHelperTextRef.current.innerText = '';
-                console.log(emailFormat.test(e.target.value))
                 if (emailFormat.test(e.target.value) === true) {
                     e.target.classList.remove('invalid');
                     e.target.classList.add('valid');
@@ -157,7 +154,7 @@ const SignUpComponent = ({ ...props }): any => {
         });
     };
 
-    const validatePass: FormEventHandler = (e: any) => {
+    const validatePass = useCallback((e) => {        
         if (e.target.value.length === 0) {
             e.target.classList.remove('valid');
             e.target.classList.add('invalid');
@@ -183,47 +180,32 @@ const SignUpComponent = ({ ...props }): any => {
             inputPassHelperTextRef.current.className = "text-red-500"
         }
 
-        if (e.target.value.length < 15) {
+        if (e.target.value.length <= 15) {
             inputPassHelperTextRef2.current.className = "text-green-500"
         } else {
             inputPassHelperTextRef2.current.className = "text-red-500"
         }
 
-        // 2. Contiene un digito
-        var nums = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-        for (let i = 0; i < nums.length; i++) {
-            const element = nums[i];
-            if (e.target.value.includes(element)) {
-                inputPassHelperTextRef3.current.className = "text-green-500"
-                break;
-            } else {
-                inputPassHelperTextRef3.current.className = "text-red-500"
-            }
+        // 2. Contiene un digito        
+        if (/\d/.test(e.target.value)) {
+            inputPassHelperTextRef3.current.className = "text-green-500"
+        } else {
+            inputPassHelperTextRef3.current.className = "text-red-500"
         }
 
         // 3. Contiene una letra mayuscula
-        for (let i = 0; i < e.target.value.length; i++) {
-            var letra = e.target.value.charAt(i);
-            if (letra === letra.toUpperCase()) {
-                inputPassHelperTextRef4.current.className = "text-green-500"
-                break;
-            } else {
-                inputPassHelperTextRef4.current.className = "text-red-500"
-            }
+        if (/[A-Z]/.test(e.target.value)) {
+            inputPassHelperTextRef4.current.className = "text-green-500"
+        } else {
+            inputPassHelperTextRef4.current.className = "text-red-500"
         }
+        
 
         // 4. Contiene un caracter especial
-        var specialCharts = ['@', '$', '&', '*', '%', '!', '?'];
-
-        for (let i = 0; i < specialCharts.length; i++) {
-            const element = specialCharts[i];
-            if (e.target.value.includes(element)) {
-                inputPassHelperTextRef5.current.className = "text-green-500"
-                break;
-            } else {
-                inputPassHelperTextRef5.current.className = "text-red-500"
-            }
+        if (/[@$&*%!?]/.test(e.target.value)) {
+            inputPassHelperTextRef5.current.className = "text-green-500"
+        } else {
+            inputPassHelperTextRef5.current.className = "text-red-500"
         }
 
         //validacion del form
@@ -234,9 +216,9 @@ const SignUpComponent = ({ ...props }): any => {
             e.target.classList.remove('valid');
             e.target.classList.add('invalid');
         }
-    };
+    }, [])
 
-    const validateConfirmPass: FormEventHandler = (e: any): void => {
+    const validateConfirmPass = useCallback((e): void => {
         if (e.target.value.length === 0) {
             e.target.classList.remove('valid');
             e.target.classList.add('invalid');
@@ -245,17 +227,17 @@ const SignUpComponent = ({ ...props }): any => {
         }
 
         if (e.target.value == signUpData.password) {
-            e.target.classList.remove('valid');
-            e.target.classList.add('invalid');
-            inputPass2HelperTextRef.current.innerText = 'No match in passwords';
-        } else {
             e.target.classList.remove('invalid');
             e.target.classList.add('valid');
             inputPass2HelperTextRef.current.innerText = '';
+        } else {
+            e.target.classList.remove('valid');
+            e.target.classList.add('invalid');
+            inputPass2HelperTextRef.current.innerText = 'No match in passwords';
         }
-    }
+    }, [signUpData])
 
-    const handleFormSignUpSubmit: FormEventHandler = (e: any) => {
+    const handleFormSignUpSubmit = useCallback((e) => {
         e.preventDefault();
         for (let i = 0; i < (e.target.length - 1); i++) {
             const element = e.target[i];
@@ -264,12 +246,13 @@ const SignUpComponent = ({ ...props }): any => {
                     http.post('/createNewUser', signUpData)
                         .then((res: any) => {
                             
-                            Login({
+                            auth.Login({
                                 username: signUpData.username,
                                 password: signUpData.password
                             })
                                 .then((data: any) => {
                                     socket.emit('User authenticated', data.id, data.email);
+                                    setAuthUser(data)
                                     return navigate('/chatUI');
                                 });
                         })
@@ -283,43 +266,43 @@ const SignUpComponent = ({ ...props }): any => {
             }
 
         }
-    };
+    }, [signUpData]);
 
     return (
-        <div className="h-screen flex flex-col justify-center items-center">
-            <div className="m-5 text-2xl">Chat App - Sign Up</div>
+        <div className="h-screen flex justify-center items-center bg-gray-50 duration-200 dark:bg-indigo-900" style={{ flexDirection: 'column' }}>
+            <div className="m-5 text-2xl text-gray-900 dark:text-white">Chat App - Sign Up</div>
 
-            <form className="w-2/3 p-5 border rounded-lg border-inherit-600 md:w-1/4" onSubmit={handleFormSignUpSubmit}>
+            <form className="text-black w-2/3 p-5 border bg-white rounded-lg border-inherit-600 md:w-1/4" onSubmit={handleFormSignUpSubmit}>
                 <div className="mb-2">
                     <label htmlFor="name" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Your name</label>
-                    <input type="text" id="name" ref={inputNameRef} onChange={(e: any) => onInputChange(e.target.value, "name", signUpData, setSignUpData)} onInput={validateName} value={signUpData.name} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Name" />
+                    <input type="text" id="name" ref={inputNameRef} onChange={(e: any) => onInputChange(e.target.value, "name", signUpData, setSignUpData)} onInput={validateName} value={signUpData.name} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Name" />
                     <p className="mt-1 text-sm text-red-600 dark:text-red-500" ref={inputNameHelperTextRef}></p>
                 </div>
                 <div className="mb-2">
                     <label htmlFor="lname" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Your last name</label>
-                    <input type="text" id="lname" ref={inputLNameRef} onChange={(e: any) => onInputChange(e.target.value, "lname", signUpData, setSignUpData)} onInput={validateLName} value={signUpData.lname} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Last name" />
+                    <input type="text" id="lname" ref={inputLNameRef} onChange={(e: any) => onInputChange(e.target.value, "lname", signUpData, setSignUpData)} onInput={validateLName} value={signUpData.lname} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Last name" />
                     <p className="mt-1 text-sm text-red-600 dark:text-red-500" ref={inputLNameHelperTextRef}></p>
                 </div>
                 <div className="mb-2">
                     <label htmlFor="username" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Your username</label>
-                    <input type="text" id="username" ref={inputUserNameRef} onChange={(e: any) => onInputChange(e.target.value, "username", signUpData, setSignUpData)} onInput={verifyAndValidateUsername} value={signUpData.username} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Username" />
+                    <input type="text" id="username" ref={inputUserNameRef} onChange={(e: any) => onInputChange(e.target.value, "username", signUpData, setSignUpData)} onInput={verifyAndValidateUsername} value={signUpData.username} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Username" />
                     <p className="mt-1 text-sm text-red-600 dark:text-red-500" ref={inputUserNameHelperTextRef}></p>
                 </div>
                 <div className="mb-2">
                     <label htmlFor="email" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Your email</label>
-                    <input type="email" id="email" ref={inputEmailRef} onChange={(e: any) => onInputChange(e.target.value, "email", signUpData, setSignUpData)} onInput={verifyAndValidateEmail} value={signUpData.email} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Email" />
+                    <input type="email" id="email" ref={inputEmailRef} onChange={(e: any) => onInputChange(e.target.value, "email", signUpData, setSignUpData)} onInput={verifyAndValidateEmail} value={signUpData.email} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Email" />
                     <p className="mt-1 text-sm text-red-600 dark:text-red-500" ref={inputEmailHelperTextRef}></p>
                 </div>
                 <div className="mb-2">
                     <label htmlFor="password" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Your password</label>
-                    <input type="password" id="password" ref={inputPassRef} onChange={(e: any) => onInputChange(e.target.value, "password", signUpData, setSignUpData)} onInput={validatePass} value={signUpData.password} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Password" />
+                    <input type="password" id="password" ref={inputPassRef} onChange={(e: any) => onInputChange(e.target.value, "password", signUpData, setSignUpData)} onInput={validatePass} value={signUpData.password} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Password" />
                     <p className="mt-1 text-sm text-gray-400 dark:text-gray-500" >
                         Password must contain: <span ref={inputPassHelperTextRef}>Over 8 characters</span>, <span ref={inputPassHelperTextRef2}>Under 16 characters</span>, <span ref={inputPassHelperTextRef3}>One digit</span>, <span ref={inputPassHelperTextRef4}>One upper letter</span> and <span ref={inputPassHelperTextRef5}>One special character(@, $, &, *, %, !, ?)</span>
                     </p>
                 </div>
                 <div className="mb-6">
                     <label htmlFor="repeat-password" className="block mb-2 font-medium text-gray-900 dark:text-gray-300">Confirm password</label>
-                    <input type="password" id="repeat-password" ref={inputPass2Ref} onChange={validateConfirmPass} className="shadow-sm bg-gray-50 border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-indigo-500 dark:focus:border-indigo-500 dark:shadow-sm-light" placeholder="Confirm password" />
+                    <input type="password" id="repeat-password" ref={inputPass2Ref} onChange={validateConfirmPass} className="bg-white border border-gray-300 text-gray-900 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5 dark:focus:ring-indigo-900 dark:focus:border-indigo-900" placeholder="Confirm password" />
                     <p className="mt-1 text-sm text-red-600 dark:text-red-500" ref={inputPass2HelperTextRef}></p>
                 </div>
                 <button type="submit" id='triggerElement' className=" w-full text-white bg-indigo-600 hover:bg-indigo-800 focus:ring-4 focus:ring-indigo-300 font-medium rounded-lg px-5 py-2.5 text-center dark:bg-indigo-600 dark:hover:bg-indigo-700 dark:focus:ring-indigo-800">Sign Up</button>

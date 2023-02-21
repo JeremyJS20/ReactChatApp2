@@ -55,10 +55,10 @@ exports.verifyAndAuthUserController = async (req, res) => {
     const userPassword = CryptoJS.AES.decrypt(getUser.Password, 'password').toString(CryptoJS.enc.Utf8);
 
     if (req.body.password != userPassword) {
-      return res.status(400).json([]);
+      return res.json([]);
     }
 
-    // una vez se confirman los datos se genera un token para autenticar al usuario
+    // // una vez se confirman los datos se genera un token para autenticar al usuario
     const token = jwt.sign({
       Id: getUser._id,
       Name: getUser.Name,
@@ -67,13 +67,17 @@ exports.verifyAndAuthUserController = async (req, res) => {
       UserName: getUser.UserName,
       ProfilePhoto: getUser.Source
     }, 'user', {
-      expiresIn: '20m'
+      expiresIn: '1h'
     });
 
     return res.status(200).json([{
-      id: getUser._id,
-      email: getUser.Email,
-      token: token,
+      Id: getUser._id,
+      Name: getUser.Name,
+      LName: getUser.Lname,
+      Email: getUser.Email,
+      UserName: getUser.UserName,
+      ProfilePhoto: getUser.Source,
+      token: token
     }]);
   } catch (err) { res.status(500).json(err) }
 };
@@ -160,7 +164,7 @@ exports.sendMessageController = async (req, res) => {
       Body: req.body.msg,
       MsgType: "single",
     });
-  
+
     newMessage.save((err, result) => {
       if (err) return res.status(500).json(err);
   
@@ -168,7 +172,7 @@ exports.sendMessageController = async (req, res) => {
       io.to(config.SESSIONSMAP[req.body.to]).emit('Update Chats', result);
       io.to(config.SESSIONSMAP[req.body.to]).emit('Update Messages', result);
       io.to(config.SESSIONSMAP[req.body.to]).emit('Message sended', req.body.from, req.body.to);
-  
+
       res.status(200).json(result);
     });
   } catch (error) {
@@ -333,6 +337,48 @@ exports.sendFriendRequestController = async (req, res) => {
   }
 };
 
+exports.addContactController = async (req, res) => {
+  try {
+    let fl1 = await models.userContactListSchemaModel.updateOne(
+      {
+        IDUser: new mongoose.Types.ObjectId(req.body.IDUser),
+      },
+      {
+        $push: { ContactList: {IDContact: new mongoose.Types.ObjectId(req.body.IDContact), Name: req.body.Name, Lname: req.body.LName} },
+      }
+    );
+
+    if (fl1.modifiedCount === 0) {
+      fl1 = await new models.userContactListSchemaModel({
+        IDUser: new mongoose.Types.ObjectId(req.body.IDUser),
+        ContactList: [{IDContact: new mongoose.Types.ObjectId(req.body.IDContact), Name: req.body.Name, Lname: req.body.LName}],
+      }).save();
+    } else{
+      fl1 = await models.userContactListSchemaModel.findOne({
+        IDUser: new mongoose.Types.ObjectId(req.body.IDUser),
+      });
+    }
+
+    const friendData = await models.userSchemaModel.findOne({
+      _id: new mongoose.Types.ObjectId(req.body.IDContact),
+    });
+
+    const cont = fl1.ContactList.find((contact) => contact.IDContact.toString() == req.body.IDContact);
+
+    res.status(200).json({
+      Id: friendData._id.toString(),
+      FullName: `${cont.Name || friendData.Name} ${cont.Lname || friendData.Lname}`,
+      UserName: friendData.UserName,
+      ConnData: friendData.ConnData,
+      Email: friendData.Email,
+      Status2: '',
+      ProfilePhoto: config.DEFAULTPROFILE,
+    });
+  } catch (error) {
+    
+  }
+};
+
 exports.acceptFriendRequestController = async (req, res) => {
   try {
     await models.notificationsSchemaModel.updateOne(
@@ -389,7 +435,7 @@ exports.acceptFriendRequestController = async (req, res) => {
       io.to(config.SESSiONSMAP[req.body.from]).emit("Update Contacts List");
     }
 
-    const fl1 = await models.userFriendListSchemaModel.findOneAndUpdate(
+    const fl1 = await models.userContactListSchema.findOneAndUpdate(
       {
         IDUser: new mongoose.Types.ObjectId(req.body.from),
       },
@@ -399,13 +445,13 @@ exports.acceptFriendRequestController = async (req, res) => {
     );
 
     if (fl1 === null) {
-      new models.userFriendListSchemaModel({
+      new models.userContactListSchema({
         IDUser: new mongoose.Types.ObjectId(req.body.from),
         FriendList: [new mongoose.Types.ObjectId(req.body.to)],
       }).save();
     }
 
-    const fl2 = await models.userFriendListSchemaModel.findOneAndUpdate(
+    const fl2 = await models.userContactListSchema.findOneAndUpdate(
       {
         IDUser: new mongoose.Types.ObjectId(req.body.to),
       },
@@ -415,7 +461,7 @@ exports.acceptFriendRequestController = async (req, res) => {
     );
 
     if (fl2 === null) {
-      new models.userFriendListSchemaModel({
+      new models.userContactListSchema({
         IDUser: new mongoose.Types.ObjectId(req.body.to),
         FriendList: [new mongoose.Types.ObjectId(req.body.from)],
       }).save();

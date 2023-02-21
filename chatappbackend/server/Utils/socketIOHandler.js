@@ -5,7 +5,7 @@ const config = require('./config');
 
 module.exports = (socket, io) => {
   socket.on("User authenticated", async (id, email) => {
-    try {   
+    try {
       /**
        * Cuando se autentica un usuario en el sistema, se le creara una room para fines de emitir y
        * recibir datos desde el servidor o desde otro usuario a un usuario en especifico.
@@ -24,20 +24,20 @@ module.exports = (socket, io) => {
         )
         .exec();
 
-          config.SESSIONSMAP[id] = socket.id;
+      config.SESSIONSMAP[id] = socket.id;
 
       socket.join(id);
 
-      const myChatFriends = await models.userFriendListSchemaModel.findOne({
+      const myChatFriends = await models.userContactListSchemaModel.findOne({
         IDUser: new mongoose.Types.ObjectId(id),
       });
 
       if (myChatFriends != null) {
-        myChatFriends.FriendList.forEach((chat) => {
-          socket.join(chat.toString());
+        myChatFriends.ContactList.forEach((chat) => {
+          socket.join(chat.IDContact.toString());
         });
       }
-
+      
       socket.to(id).emit("Friend connected", id);
 
     } catch (err) {
@@ -127,9 +127,11 @@ module.exports = (socket, io) => {
     } catch (err) { }
   });
 
+
+
   socket.on('working', () => console.log('working'));
 
-  socket.on("add new friend", async (id, username, callback) => {
+  socket.on("find user", async (username, userId, callback) => {
     try {
       /**
        * Basicamente desde el formulario de agregar amigos en el cliente recibira
@@ -141,31 +143,39 @@ module.exports = (socket, io) => {
           UserName: username,
         })
         .exec();
-      if (
+
+        if (
         getUserByUsername === null ||
-        getUserByUsername._id.toString() === id
+        getUserByUsername._id == userId
       ) {
         return callback({
           errCode: 5,
-          errMsg: "No se ha encontrado al usuario",
+          errMsg: "",
         });
+      }
+
+      const exists = await models.userContactListSchemaModel.findOne({
+        IDUser: new mongoose.Types.ObjectId(userId)
+      })
+
+      if(exists != null){
+        if(exists.ContactList.find((contact) => contact.IDContact.toString() == getUserByUsername._id.toString()) != undefined){
+          return callback({
+            errCode: 6,
+            errMsg: "This user already exists in your contact list",
+          });
+        }
       }
 
       return callback({
         successCode: 5,
-        userData: {
-          Id: getUserByUsername._id,
-          Name: getUserByUsername.Name,
-          LName: getUserByUsername.Lname,
-          Email: getUserByUsername.Email,
-          UserName: getUserByUsername.UserName,
-        },
+        IDUser: getUserByUsername._id,
       });
     } catch (err) { }
   });
 
   socket.on("Typing message", (id, id2) => {
-    socket.to(config.SESSIONSMAP[id]).emit("Typing message", id2)
+    socket.to(config.SESSIONSMAP[id]).emit("Typing message", id2);
   });
 
   socket.on("No typing message", (id, id2) => {

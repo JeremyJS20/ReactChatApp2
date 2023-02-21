@@ -1,16 +1,17 @@
-import jwtDecode, { JwtPayload } from 'jwt-decode';
 import React, { MouseEventHandler } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { PrivateRoutes, PublicRoutes } from './Components/ComponentTSCode/Routes';
+import AuthContext, { AuthContextProvider } from './Components/Context/AuthContext';
+import AuthPrivateRouteVerifier from './Components/Pages/AuthVerifier/AuthPrivateRouteVerifier';
+import AuthVerifier from './Components/Pages/AuthVerifier/AuthPrivateRouteVerifier';
+import AuthPublicRouteVerifier from './Components/Pages/AuthVerifier/AuthPublicRouteVerifier';
 import ChatUIComponent from './Components/Pages/ChatUI/ChatUIComponent';
 import SignInComponent from './Components/Pages/SignIn/SignInComponent';
 import SignUpComponent from './Components/Pages/SignUp/SignUpComponent';
 import { http } from './Services/ApiServices/HttpClient/HttpClient';
-import {socket} from './Services/ApiServices/SocketIOClient/Socket.IOClient';
+import { socket } from './Services/ApiServices/SocketIOClient/Socket.IOClient';
 
 const App = (): JSX.Element => {
-
-  let token: any = localStorage.getItem('UserToken');
-  let user: any = (token != undefined ? jwtDecode<JwtPayload>(token) : null);
 
   socket.on('connect', () => console.log('socket.io working'));
 
@@ -30,20 +31,20 @@ const App = (): JSX.Element => {
     }
   });
 
-  window.onload = (e: any) => {
-    if (localStorage.getItem("UserToken") === null) {
-      return;
-    }
-    http
-      .get("/userDataByToken/" + localStorage.getItem("UserToken"))
-      .then((data: any) => {
-        if (data.userIsAuthenticated) {
-          socket.emit('User unauthenticated', user.Id, new Date());
-          return;
-        }
-        socket.emit("User authenticated", data.Id, data.Email);
-      });
-  };
+  // window.onload = (e: any) => {
+  //   if (localStorage.getItem("UserToken") === null) {
+  //     return;
+  //   }
+  //   http
+  //     .get("/userDataByToken/" + localStorage.getItem("UserToken"))
+  //     .then((data: any) => {
+  //       if (data.userIsAuthenticated) {
+  //         socket.emit('User unauthenticated', user.Id, new Date());
+  //         return;
+  //       }
+  //       socket.emit("User authenticated", data.Id, data.Email);
+  //     });
+  // };
 
   /*window.onbeforeunload = (e: any) => {
     socket.emit('User unauthenticated', user.Id, new Date());
@@ -53,23 +54,23 @@ const App = (): JSX.Element => {
 
   const themeSwitch: MouseEventHandler = (e: any) => {
     if (localStorage.getItem('color-theme')) {
-        if (localStorage.getItem('color-theme') === 'light') {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('color-theme', 'dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('color-theme', 'light');
-        }
+      if (localStorage.getItem('color-theme') === 'light') {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+      }
     } else {
-        if (document.documentElement.classList.contains('dark')) {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('color-theme', 'light');
-        } else {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('color-theme', 'dark');
-        }
+      if (document.documentElement.classList.contains('dark')) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('color-theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('color-theme', 'dark');
+      }
     }
-};
+  };
 
   /*
   <label className="swap swap-rotate">
@@ -79,14 +80,23 @@ const App = (): JSX.Element => {
             </label>
   */
   return (
-    
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate replace to="/signIn" />} />
-        <Route path="/signIn" element={<SignInComponent socket={socket} />} ></Route>
-        <Route path="/signUp" element={<SignUpComponent socket={socket} />} ></Route>
-        <Route path="/chatUI" element={<ChatUIComponent socket={socket} />} />
-      </Routes>
+      <AuthContextProvider>
+        <Routes>
+
+          <Route path="/" element={<Navigate replace to={PublicRoutes.SIGNIN} />} />
+          <Route path='*' element={<>not found</>} />
+
+          <Route element={<AuthPublicRouteVerifier/> }>
+            <Route path={PublicRoutes.SIGNIN} element={<SignInComponent socket={socket} />} />
+            <Route path={PublicRoutes.SIGNUP} element={<SignUpComponent socket={socket} />} />
+          </Route>
+          <Route element={<AuthPrivateRouteVerifier />}>
+            <Route path={PrivateRoutes.CHATUI} element={<ChatUIComponent socket={socket} />} />
+          </Route>
+          
+        </Routes>
+      </AuthContextProvider>
     </BrowserRouter>
   );
 }

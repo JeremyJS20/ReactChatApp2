@@ -13,6 +13,8 @@ router.post('/api/SendFriendRequest', controller.sendFriendRequestController);
 
 router.post('/api/AcceptFriendRequest', controller.acceptFriendRequestController);
 
+router.post('/api/addContact', controller.addContactController);
+
 router.post('/api/ForwardMessage', controller.forwardMessageController);
 
 router.post('/api/ReplyMessage', controller.replyMessageController);

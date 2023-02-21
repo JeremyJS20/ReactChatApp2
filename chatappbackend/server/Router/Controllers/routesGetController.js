@@ -16,10 +16,9 @@ exports.verifyUserAuthTokenExpiredController = (req, res) => {
   try {
     jwt.verify(req.params.token, "user", (err, data) => {
       if (err) {
-        return res.json(false);
+        return res.json(undefined);
       }
-  
-      return res.status(200).json(true);
+      return res.status(200).json(data);
     });
   } catch (error) {
     res.status(500).json(error);
@@ -56,35 +55,35 @@ exports.notificationsController = async(req, res) => {
 
 exports.myContactsController = async (req, res) => {
   try{
-    const myChatFriends = await models.userFriendListSchemaModel.findOne({
-      IDUser: new mongoose.Types.ObjectId(req.params.Id),
-    }).sort({Name:0});
-
-    if (myChatFriends == null || myChatFriends.FriendList.length === 0) {
-      return res.json([]);
+    const myChatFriends = await models.userContactListSchemaModel.findOne({
+      IDUser: new mongoose.Types.ObjectId(req.params.Id)
+    }).exec()
+    if (myChatFriends == null || myChatFriends.ContactList.length === 0) {
+      return res.status(200).json([]);
     }
 
     var temp = [];
     var i = 1;
-    myChatFriends.FriendList.forEach(async (chatID) => {
+    myChatFriends.ContactList.forEach(async (contact) => {
       const friendData = await models.userSchemaModel.findOne({
-        _id: chatID,
+        _id: new mongoose.Types.ObjectId(contact.IDContact),
       });
       temp.push({
         Id: friendData._id.toString(),
-        FullName: `${friendData.Name} ${friendData.Lname}`,
+        FullName: `${contact.Name || friendData.Name} ${contact.Lname || friendData.Lname}`,
         UserName: friendData.UserName,
         ConnData: friendData.ConnData,
         Email: friendData.Email,
         Status2: '',
         ProfilePhoto: config.DEFAULTPROFILE,
       });
-      if (i === myChatFriends.FriendList.length) {
+      if (i === myChatFriends.ContactList.length) {
         res.status(200).json(temp);
       }
       i++;
     });
-  } catch(err){ res.status(500).json(err)}
+  } catch(err){
+    res.status(500).json(err)}
 };
 
 exports.selectedChatMessagesController = async (req, res) => {
@@ -102,8 +101,8 @@ exports.selectedChatMessagesController = async (req, res) => {
           },
         ],
       })
-      .sort({SendDate: -1, _id: -1}).skip(req.params.offset).limit(Number(req.params.offset) + 15);
-
+      .sort({SendDate: -1, _id: -1})
+//.skip(req.params.offset).limit(Number(req.params.offset) + 15);
     await models.msgSchemaModel.updateMany(
       {
         From: new mongoose.Types.ObjectId(req.params.Id2),
@@ -186,6 +185,8 @@ exports.recentChatsController = async (req, res) => {
         },
       },
     ]);
+
+//    console.log(lastMessages);
 
     if (lastMessages.length === 0) {
       return res.json([]);
