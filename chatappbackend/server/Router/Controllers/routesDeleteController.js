@@ -1,6 +1,5 @@
 const models = require('../../Utils/schemas');
 const mongoose = require('mongoose');
-const config = require('../../Utils/config');
 
 exports.emptyChatController = async (req, res) => {
     try {
@@ -23,8 +22,8 @@ exports.emptyChatController = async (req, res) => {
 
         const io = req.app.get('socketio');
 
-        io.to(config.SESSIONSMAP[req.params.Id]).emit('Update Chats', [], 'emptyChat');
-        io.to(config.SESSIONSMAP[req.params.Id]).emit('Update Messages', [], 'emptyChat');
+        io.to(process.env.SESSIONSMAP[req.params.Id]).emit('Update Chats', [], 'emptyChat');
+        io.to(process.env.SESSIONSMAP[req.params.Id]).emit('Update Messages', [], 'emptyChat');
 
         res.status(200).json(true);
     } catch (err) { res.status(500).json(err) }
@@ -38,8 +37,8 @@ exports.deleteMessageController = async (req, res) => {
         
         const io = req.app.get('socketio');
 
-        io.to(config.SESSIONSMAP[req.params.Id2]).emit('Update Chats', null, 'deletedMessage');
-        io.to(config.SESSIONSMAP[req.params.Id2]).emit('Update Messages', messageDeleted, 'deletedMessage');
+        io.to(process.env.SESSIONSMAP[req.params.Id2]).emit('Update Chats', null, 'deletedMessage');
+        io.to(process.env.SESSIONSMAP[req.params.Id2]).emit('Update Messages', messageDeleted, 'deletedMessage');
 
         res.status(200).json(true);
     } catch (err) { res.status(500).json(err) }

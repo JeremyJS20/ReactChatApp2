@@ -5,7 +5,6 @@ const fileUpload = require("express-fileupload");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors"); //para poder hacer peticiones desde el cliente
-const config = require('./server/Utils/config');
 
 const app = express(); //inicializar express
 const httpServer = createServer(app); //inicializar servidor
@@ -17,12 +16,12 @@ require('dotenv').config();
 require("./server/Utils/mongoose");
 
 //Establecer puerto del servidor
-app.set("port", config.PORT);
+app.set("port", process.env.PORT);
 
 //middlewares
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); //para poder retornar datos en formato json
-app.use(cors({origin: config.ORIGIN})); // para poder hacer peticiones desde el cliente
+app.use(cors({origin: process.env.ORIGIN})); // para poder hacer peticiones desde el cliente
 app.use(express.static(`${__dirname}/public`)); //para poder acceder a contenido publico del servidor
 app.use(fileUpload());
 app.set('socketio', io);
@@ -37,6 +36,6 @@ app.use(require("./server/Router/Routes/routesGet"));
 app.use(require("./server/Router/Routes/routesPost"));
 app.use(require("./server/Router/Routes/routesDelete"));
 
-httpServer.listen(config.PORT, () => {
-  console.log(`Working on port: ${config.PORT}`);
+httpServer.listen(process.env.PORT, () => {
+  console.log(`Working on port: ${process.env.PORT}`);
 });

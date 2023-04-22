@@ -1,7 +1,6 @@
 //modelos de esquemas de la base de datos
 const models = require('./schemas');
 const mongoose = require("mongoose");
-const config = require('./config');
 
 module.exports = (socket, io) => {
   socket.on("User authenticated", async (id, email) => {
@@ -24,7 +23,7 @@ module.exports = (socket, io) => {
         )
         .exec();
 
-      config.SESSIONSMAP[id] = socket.id;
+      process.env.SESSIONSMAP[id] = socket.id;
 
       socket.join(id);
 
@@ -175,10 +174,10 @@ module.exports = (socket, io) => {
   });
 
   socket.on("Typing message", (id, id2) => {
-    socket.to(config.SESSIONSMAP[id]).emit("Typing message", id2);
+    socket.to(process.env.SESSIONSMAP[id]).emit("Typing message", id2);
   });
 
   socket.on("No typing message", (id, id2) => {
-    socket.to(config.SESSIONSMAP[id]).emit("No typing message", id2);
+    socket.to(process.env.SESSIONSMAP[id]).emit("No typing message", id2);
   });
 };

@@ -25,23 +25,28 @@ const SignInComponent = ({ ...props }): JSX.Element => {
 
     let navigate: any = useNavigate();
 
-    const onSignInFormSubmitted: any = (e: any, state: object, login: any, navigate: any) => {
+    const onSignInFormSubmitted: any = async (e: any, state: object, login: any, navigate: any) => {
         e.preventDefault();
         setLoginStatus('loading');
         setIsSignInDataRight(true);
-        login(state)
-            .then((data: any) => {
-                setLoginStatus(undefined)
-                if (!data) {
-                    setIsSignInDataRight(false);
-                    return;
-                };
+        
+        try {
+            const data = await login(state);
 
-                setIsSignInDataRight(true)
-                setAuthUser(data);
-                socket.emit('User authenticated', data.id, data.email);
-                navigate(PrivateRoutes.CHATUI);
-            });
+            setLoginStatus(undefined)
+            if (!data) {
+                setIsSignInDataRight(false);
+                return;
+            };
+
+            setIsSignInDataRight(true)
+            setAuthUser(data);
+            socket.emit('User authenticated', data.id, data.email);
+            navigate(PrivateRoutes.CHATUI);
+        } catch (error) {
+            console.log(error);
+            
+        }
     };
 
     const PasswordBtnTypeSwitcher: MouseEventHandler = (e: any) => {

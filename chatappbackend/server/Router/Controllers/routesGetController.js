@@ -4,7 +4,6 @@ const models = require("../../Utils/schemas");
 const mongoose = require("mongoose");
 
 const jwt = require("jsonwebtoken");
-const config = require("../../Utils/config");
 
 exports.api = (req, res) => {
   res.json({
@@ -75,7 +74,7 @@ exports.myContactsController = async (req, res) => {
         ConnData: friendData.ConnData,
         Email: friendData.Email,
         Status2: '',
-        ProfilePhoto: config.DEFAULTPROFILE,
+        ProfilePhoto: process.env.DEFAULTPROFILE,
       });
       if (i === myChatFriends.ContactList.length) {
         res.status(200).json(temp);
@@ -206,7 +205,7 @@ exports.recentChatsController = async (req, res) => {
           temp.unshift({
             Id: friendData._id.toString(),
             FullName: `${friendData.Name} ${friendData.Lname}`,
-            ProfilePhoto: config.DEFAULTPROFILE,
+            ProfilePhoto: process.env.DEFAULTPROFILE,
             Email: friendData.Email,
             LastMsgData: {
               Msg: lastMsg.Body,
@@ -320,4 +319,15 @@ exports.recentChatsController = async (req, res) => {
       }
     }
   }*/
+};
+
+exports.verifyResetPasswordToken = async (req, res) => {
+  try {
+    jwt.verify(req.params.token, 'resetpassword', (err, data) => {
+      if (err) {
+        return res.json();
+      }
+      return res.status(200).json(data.email);
+    });
+  } catch (err) { }
 };

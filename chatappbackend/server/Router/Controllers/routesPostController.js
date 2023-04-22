@@ -2,11 +2,11 @@
 'use strict'
 const models = require('../../Utils/schemas');
 const mongoose = require('mongoose');
-const config = require('../../Utils/config');
 
 const jwt = require('jsonwebtoken');
 const CryptoJS = require("crypto-js");
-var fs = require('fs');
+const nodemailer = require("../../Utils/nodemailer");
+const transporter = new nodemailer();
 
 exports.createNewUserController = (req, res) => {
   /**
@@ -48,7 +48,7 @@ exports.verifyAndAuthUserController = async (req, res) => {
     }).exec();
 
     if (getUser === null) {
-      return res.status(400).json([]);
+      return res.json([]);
     }
 
     // se desencripta la clave para compararla con la clave que se recibe
@@ -139,11 +139,11 @@ exports.sendMessageWithFileController = async (req, res) => {
       newFileMessage.save((err, result) => {
         if (err) return res.status(500).json(err);
   
-        io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
-        io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
-        io.to(config.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
-        io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
-        io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.from, req.body.to);
+        io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
+        io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
+        io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
+        io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
+        io.to(process.env.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.from, req.body.to);
   
         res.status(200).json(result);
       });
@@ -168,10 +168,10 @@ exports.sendMessageController = async (req, res) => {
     newMessage.save((err, result) => {
       if (err) return res.status(500).json(err);
   
-      io.to(config.SESSIONSMAP[req.body.from]).emit('Update Chats', result);
-      io.to(config.SESSIONSMAP[req.body.to]).emit('Update Chats', result);
-      io.to(config.SESSIONSMAP[req.body.to]).emit('Update Messages', result);
-      io.to(config.SESSIONSMAP[req.body.to]).emit('Message sended', req.body.from, req.body.to);
+      io.to(process.env.SESSIONSMAP[req.body.from]).emit('Update Chats', result);
+      io.to(process.env.SESSIONSMAP[req.body.to]).emit('Update Chats', result);
+      io.to(process.env.SESSIONSMAP[req.body.to]).emit('Update Messages', result);
+      io.to(process.env.SESSIONSMAP[req.body.to]).emit('Message sended', req.body.from, req.body.to);
 
       res.status(200).json(result);
     });
@@ -207,11 +207,11 @@ exports.forwardMessageController = async (req, res) => {
     newForwardMessage.save((err, result) => {
       if (err) return res.status(500).json(err);
 
-      io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
-      io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
+      io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
+      io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
 
       res.status(200).json(result);
     });
@@ -251,11 +251,11 @@ exports.replyMessageController = async (req, res) => {
     newReplyMessage.save((err, result) => {
       if (err) return res.status(500).json(err);
 
-      io.to(config.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
-      //      io.to(config.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
-      io.to(config.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
+      io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Chats', result);
+      //      io.to(process.env.SESSIONSMAP[req.body.From]).emit('Update Messages', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Chats', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Update Messages', result);
+      io.to(process.env.SESSIONSMAP[req.body.To]).emit('Message sended', req.body.From, req.body.To);
 
       res.status(200).json(result);
     });
@@ -325,7 +325,7 @@ exports.sendFriendRequestController = async (req, res) => {
       if (err) return res.status(500).json(err);
       const io = req.app.get('socketio');
 
-      io.to(config.SESSiONSMAP[req.body.to]).emit("New Notification", result);
+      io.to(process.env.SESSiONSMAP[req.body.to]).emit("New Notification", result);
 
       return res.status(200).json({
         successCode: 6,
@@ -372,7 +372,7 @@ exports.addContactController = async (req, res) => {
       ConnData: friendData.ConnData,
       Email: friendData.Email,
       Status2: '',
-      ProfilePhoto: config.DEFAULTPROFILE,
+      ProfilePhoto: process.env.DEFAULTPROFILE,
     });
   } catch (error) {
     
@@ -426,13 +426,13 @@ exports.acceptFriendRequestController = async (req, res) => {
         UserName: user.UserName,
         ProfilePhoto: user.Source.ProfilePhoto,
       }).save();
-      io.to(config.SESSiONSMAP[req.body.from]).emit("New Notification");
-      io.to(config.SESSiONSMAP[req.body.from]).emit("Update Contacts List");
+      io.to(process.env.SESSiONSMAP[req.body.from]).emit("New Notification");
+      io.to(process.env.SESSiONSMAP[req.body.from]).emit("Update Contacts List");
     }
 
     if (not.modifiedCount > 0) {
-      io.to(config.SESSiONSMAP[req.body.from]).emit("New Notification");
-      io.to(config.SESSiONSMAP[req.body.from]).emit("Update Contacts List");
+      io.to(process.env.SESSiONSMAP[req.body.from]).emit("New Notification");
+      io.to(process.env.SESSiONSMAP[req.body.from]).emit("Update Contacts List");
     }
 
     const fl1 = await models.userContactListSchema.findOneAndUpdate(
@@ -467,12 +467,53 @@ exports.acceptFriendRequestController = async (req, res) => {
       }).save();
     }
 
-    io.to(config.SESSiONSMAP[req.body.to]).emit("New Notification");
-    io.to(config.SESSiONSMAP[req.body.to]).emit("Update Contacts List");
+    io.to(process.env.SESSiONSMAP[req.body.to]).emit("New Notification");
+    io.to(process.env.SESSiONSMAP[req.body.to]).emit("Update Contacts List");
 
     res.json({
       successCode: 8,
       successMsg: "A new contact was added to your contacts list",
     });
+  } catch (err) { }
+};
+
+exports.sendPasswordRecoveryEmail = async (req, res) => {
+  try {
+    const emailTo = req.body.email;
+
+    let token = jwt.sign({
+      email: emailTo,
+    },
+    "resetpassword", {
+      expiresIn: 3600,
+    });
+
+    const user = await models.userSchemaModel.findOne({
+      Email: emailTo,
+    }).exec();
+
+    transporter.sendEmail({
+      from: `Forgotten password - Chat App   <${process.env.NODEMAILER_AUTH_EMAIL}>`,
+      to: emailTo,
+      subject: "Forgotten Password", // Subject line
+      html: `<h3>Hey ${user.Name}</h3><hr><p>Para continar con el proceso, </p> <a href="${process.env.ORIGIN}/resetPassword/${token}">haga click aqui</a> <p>El enlace expira en 10 minutos, asi que acceda lo mas pronto posible.</p>`, // html body
+    });
+
+    res.json({msg: 'email sended'});
+  } catch (err) { }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+
+    await models.userSchemaModel.findOneAndUpdate({
+      Email: req.body.email,
+    },
+    {
+      Password: CryptoJS.AES.encrypt(req.body.password, 'password').toString(),
+    }
+    ).exec();
+
+    res.json({msg: 'password resetted'});
   } catch (err) { }
 };

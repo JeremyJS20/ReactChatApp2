@@ -10,6 +10,8 @@ import SignInComponent from './Components/Pages/SignIn/SignInComponent';
 import SignUpComponent from './Components/Pages/SignUp/SignUpComponent';
 import { http } from './Services/ApiServices/HttpClient/HttpClient';
 import { socket } from './Services/ApiServices/SocketIOClient/Socket.IOClient';
+import ForgottenPassword from './Components/Pages/ForgottenPassword/ForgottenPassword.component';
+import ResetPassword from './Components/Pages/ResetPassword/ResetPassword.component';
 
 const App = (): JSX.Element => {
 
@@ -88,8 +90,10 @@ const App = (): JSX.Element => {
           <Route path='*' element={<>not found</>} />
 
           <Route element={<AuthPublicRouteVerifier/> }>
-            <Route path={PublicRoutes.SIGNIN} element={<SignInComponent socket={socket} />} />
-            <Route path={PublicRoutes.SIGNUP} element={<SignUpComponent socket={socket} />} />
+            <Route path={PublicRoutes.SIGNIN} element={<SignInComponent />} />
+            <Route path={PublicRoutes.SIGNUP} element={<SignUpComponent />} />
+            <Route path={PublicRoutes.FORGOTTENPASSWORD} element={<ForgottenPassword />} />
+            <Route path={PublicRoutes.RESETPASSWORD} element={<ResetPassword />} />
           </Route>
           <Route element={<AuthPrivateRouteVerifier />}>
             <Route path={PrivateRoutes.CHATUI} element={<ChatUIComponent socket={socket} />} />

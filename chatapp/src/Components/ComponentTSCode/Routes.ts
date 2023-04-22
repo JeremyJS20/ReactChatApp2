@@ -1,6 +1,8 @@
 export const PublicRoutes = {
-    SIGNIN: '/signIn',
-    SIGNUP: '/SIGNUP'
+    SIGNIN: '/signin',
+    SIGNUP: '/signup',
+    FORGOTTENPASSWORD: '/forgottenpassword',
+    RESETPASSWORD: '/resetpassword/:token'
 }
 
 export const PrivateRoutes = {

@@ -19,4 +19,8 @@ router.post('/api/ForwardMessage', controller.forwardMessageController);
 
 router.post('/api/ReplyMessage', controller.replyMessageController);
 
+router.post('/api/sendPasswordRecoveryEmail', controller.sendPasswordRecoveryEmail);
+
+router.post('/api/resetPassword', controller.resetPassword);
+
 module.exports = router;

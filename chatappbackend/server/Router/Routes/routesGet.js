@@ -19,4 +19,6 @@ router.get('/api/verifyUserAuthTokenExpired/:token', controller.verifyUserAuthTo
 
 router.get('/api/userDataByToken/:token', controller.userDataByTokenController);
 
+router.get('/api/verifyResetPasswordToken/:token', controller.verifyResetPasswordToken);
+
 module.exports = router;

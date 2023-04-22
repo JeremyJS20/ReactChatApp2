@@ -96,6 +96,9 @@ class AuthClient implements IAuthClient{
                 }
                 localStorage.setItem('UserToken', data[0].token);
                 return resolve(data[0]);
+            })
+            .catch((err) => {
+                reject(err)
             });
         });
     }
